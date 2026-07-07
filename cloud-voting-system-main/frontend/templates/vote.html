@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html><head><title>Cast Your Vote</title>
+<style>
+  body { font-family: Arial; background: #f1f5f9; margin: 0; padding: 20px; }
+  .container { max-width: 600px; margin: 0 auto; }
+  h1 { color: #4f46e5; }
+  .candidate { background: white; border: 2px solid #e2e8f0; border-radius: 12px;
+               padding: 16px; margin-bottom: 12px; cursor: pointer;
+               display: flex; align-items: center; gap: 16px; }
+  .candidate:hover { border-color: #4f46e5; background: #eef2ff; }
+  .candidate.selected { border-color: #4f46e5; background: #eef2ff; }
+  .avatar { width: 48px; height: 48px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 20px; font-weight: bold; flex-shrink: 0; }
+  .btn { width: 100%; padding: 14px; background: #4f46e5; color: white;
+         border: none; border-radius: 8px; font-size: 16px; cursor: pointer;
+         margin-top: 16px; opacity: 0.5; }
+  .btn:not(:disabled) { opacity: 1; }
+  .error { background: #fef2f2; border: 1px solid #fca5a5; color: #dc2626;
+           padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+</style></head>
+<body><div class='container'>
+  <h1>🗳️ Cast Your Vote</h1>
+  <p style='color:#64748b'>Voter ID: <strong>{{ voter_id }}</strong></p>
+  {% if error %}<div class='error'>{{ error }}</div>{% endif %}
+  <form action='/submit' method='post' id='voteForm'>
+    <input type='hidden' name='voter_id' value='{{ voter_id }}'>
+    <input type='hidden' name='candidate_id' id='candidate_id'>
+    <input type='hidden' name='candidate_name' id='candidate_name'>
+    {% for c in candidates %}
+    <div class='candidate' onclick="selectCandidate('{{c.id}}','{{c.name}}')">
+      <div class='avatar' style='background:{{c.color}}'>{{c.name[0]}}</div>
+      <div>
+        <strong>{{c.name}}</strong><br>
+        <span style='color:#64748b'>{{c.party}}</span>
+      </div>
+    </div>
+    {% endfor %}
+    <button type='submit' class='btn' id='submitBtn' disabled>
+      Select a candidate to vote
+    </button>
+  </form>
+</div>
+<script>
+function selectCandidate(id, name) {
+  document.getElementById('candidate_id').value = id;
+  document.getElementById('candidate_name').value = name;
+  document.querySelectorAll('.candidate').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = false;
+  btn.textContent = 'Cast My Vote for ' + name;
+}
+</script>
+</body></html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html><html><head><title>Election Results</title>
+<meta http-equiv='refresh' content='5'>
+<style>
+  body { font-family: Arial; background: #f1f5f9; padding: 24px; }
+  h1 { color: #4f46e5; } .card { background: white; border-radius: 12px;
+  padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 16px; }
+  .bar-row { margin-bottom: 16px; } .bar-label { display: flex;
+  justify-content: space-between; margin-bottom: 4px; font-size: 14px; }
+  .bar-bg { background: #e2e8f0; border-radius: 8px; height: 32px; }
+  .bar-fill { height: 32px; border-radius: 8px; display: flex;
+  align-items: center; padding-left: 12px; color: white; font-weight: bold;
+  font-size: 13px; transition: width 0.5s ease; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .stat { text-align: center; } .stat-num { font-size: 32px; font-weight: bold;
+  color: #4f46e5; } .refresh { font-size:12px; color:#94a3b8; margin-top:8px; }
+</style></head><body>
+<h1>🗳️ Live Election Results</h1>
+<p class='refresh'>Page auto-refreshes every 5 seconds</p>
+<div class='stats'>
+  <div class='card stat'><div class='stat-num'>{{ data.total_votes }}</div>
+    <div>Total Votes Cast</div></div>
+  <div class='card stat'><div class='stat-num'>5</div>
+    <div>Total Eligible Voters</div></div>
+</div>
+<div class='card'>
+  <h2>Vote Distribution</h2>
+  {% for r in data.results %}
+  <div class='bar-row'>
+    <div class='bar-label'>
+      <span><strong>{{ r.name }}</strong> ({{ r.party }})</span>
+      <span>{{ r.votes }} votes — {{ r.percentage }}%</span>
+    </div>
+    <div class='bar-bg'>
+      <div class='bar-fill' style='width:{{ r.percentage }}%; background:{{ r.color }};
+           min-width: {% if r.votes > 0 %}40px{% else %}0{% endif %};'>
+        {{ r.percentage }}%
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% if data.total_votes == 0 %}
+    <p style='color:#94a3b8; text-align:center;'>No votes cast yet.</p>
+  {% endif %}
+</div>
+</body></html>

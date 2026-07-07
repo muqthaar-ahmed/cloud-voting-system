@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CloudVote India</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #4f46e5, #7c3aed);
+         min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .card { background: white; border-radius: 20px; box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+          width: 100%; max-width: 460px; overflow: hidden; }
+  .card-header { background: linear-gradient(135deg, #4f46e5, #7c3aed); padding: 32px;
+                 text-align: center; color: white; }
+  .card-header h1 { font-size: 28px; margin-bottom: 6px; }
+  .card-header p  { font-size: 14px; opacity: 0.85; }
+  .card-body { padding: 32px; }
+
+  .step { display: none; }
+  .step.active { display: block; }
+  .step-title { font-size: 16px; font-weight: bold; color: #374151; margin-bottom: 18px;
+                display: flex; align-items: center; gap: 10px; }
+  .step-badge { background: #4f46e5; color: white; border-radius: 50%; width: 28px; height: 28px;
+                display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+
+  .progress-bar { display: flex; gap: 6px; margin-bottom: 28px; }
+  .progress-dot { flex: 1; height: 4px; border-radius: 4px; background: #e2e8f0; transition: background 0.3s; }
+  .progress-dot.done { background: #4f46e5; }
+
+  .input-group { margin-bottom: 14px; }
+  .input-group label { display: block; font-size: 13px; color: #6b7280; margin-bottom: 5px; font-weight: 500; }
+  input[type=text], input[type=tel] {
+    width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px;
+    font-size: 15px; outline: none; transition: border 0.2s; }
+  input[type=text]:focus, input[type=tel]:focus { border-color: #4f46e5; }
+
+  .otp-boxes { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
+  .otp-boxes input { width: 48px; height: 56px; text-align: center; font-size: 22px;
+                     font-weight: bold; border: 2px solid #e2e8f0; border-radius: 10px; padding: 0; }
+  .otp-boxes input:focus { border-color: #4f46e5; }
+
+  .btn { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 15px;
+         cursor: pointer; font-weight: bold; transition: all 0.2s; }
+  .btn-primary { background: #4f46e5; color: white; }
+  .btn-primary:hover { background: #4338ca; }
+
+  .msg-error { background: #fef2f2; border: 1px solid #fca5a5; color: #dc2626;
+               padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; display: none; }
+  .msg-info  { background: #eff6ff; border: 1px solid #93c5fd; color: #1d4ed8;
+               padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; display: none; }
+
+  /* OTP Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+                   display: none; align-items: center; justify-content: center; z-index: 100; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 36px 32px; text-align: center;
+           max-width: 340px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.25); }
+  .modal h2 { color: #4f46e5; margin-bottom: 10px; font-size: 20px; }
+  .modal p  { color: #6b7280; font-size: 14px; margin-bottom: 8px; }
+  .otp-display { font-size: 38px; font-weight: bold; letter-spacing: 8px;
+                 color: #4f46e5; margin: 16px 0; font-family: monospace; }
+
+  /* CAPTCHA */
+  .captcha-question { font-size: 22px; font-weight: bold; color: #4f46e5; text-align: center;
+                      margin-bottom: 14px; padding: 14px; background: #eef2ff; border-radius: 10px; }
+
+  /* Location badge */
+  .location-badge { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+                    padding: 14px 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .location-badge span { font-size: 14px; color: #166534; }
+  .location-badge strong { color: #15803d; }
+
+  .hint { font-size: 12px; color: #94a3b8; margin-top: 10px; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- OTP Modal -->
+<div class="modal-overlay" id="otpModal">
+  <div class="modal">
+    <div style="font-size:48px; margin-bottom:8px;">📱</div>
+    <h2>Your OTP</h2>
+    <p>Hello <strong id="voterNameDisplay"></strong>!</p>
+    <p>Your one-time password is:</p>
+    <div class="otp-display" id="otpDisplay">------</div>
+    <p style="font-size:12px; color:#94a3b8;">Valid for 2 minutes.</p>
+    <button class="btn btn-primary" style="margin-top:14px" onclick="closeOtpModal()">OK, Got it →</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h1>🗳️ CloudVote India</h1>
+    <p>Tamil Nadu — Chennai Constituency</p>
+  </div>
+  <div class="card-body">
+
+    <div class="progress-bar">
+      <div class="progress-dot done" id="dot1"></div>
+      <div class="progress-dot" id="dot2"></div>
+      <div class="progress-dot" id="dot3"></div>
+    </div>
+
+    <!-- STEP 1: Voter ID + Mobile -->
+    <div class="step active" id="step1">
+      <div class="step-title"><span class="step-badge">1</span> Verify Your Identity</div>
+      <div id="err1" class="msg-error"></div>
+      <div class="input-group">
+        <label>Voter ID</label>
+        <input type="text" id="voterId" placeholder="e.g. ABC1234567" maxlength="10"
+               style="text-transform:uppercase">
+      </div>
+      <div class="input-group">
+        <label>Registered Mobile Number</label>
+        <input type="tel" id="mobile" placeholder="e.g. 9876543210" maxlength="10">
+      </div>
+      <button class="btn btn-primary" onclick="sendOtp()">Send OTP →</button>
+      <p class="hint">Test: ID <strong>ABC1234567</strong> | Mobile <strong>9876543210</strong></p>
+    </div>
+
+    <!-- STEP 2: OTP -->
+    <div class="step" id="step2">
+      <div class="step-title"><span class="step-badge">2</span> Enter OTP</div>
+      <div id="err2" class="msg-error"></div>
+      <div id="info2" class="msg-info">OTP sent! Check the popup for your code.</div>
+      <div class="otp-boxes">
+        <input type="text" maxlength="1" id="d1" oninput="otpNext(this,'d2')">
+        <input type="text" maxlength="1" id="d2" oninput="otpNext(this,'d3')">
+        <input type="text" maxlength="1" id="d3" oninput="otpNext(this,'d4')">
+        <input type="text" maxlength="1" id="d4" oninput="otpNext(this,'d5')">
+        <input type="text" maxlength="1" id="d5" oninput="otpNext(this,'d6')">
+        <input type="text" maxlength="1" id="d6" oninput="otpNext(this,null)">
+      </div>
+      <button class="btn btn-primary" onclick="verifyOtp()">Verify OTP →</button>
+    </div>
+
+    <!-- STEP 3: CAPTCHA -->
+    <div class="step" id="step3">
+      <div class="step-title"><span class="step-badge">3</span> Security Check</div>
+      <div id="err3" class="msg-error"></div>
+      <div class="location-badge">
+        📍 <span>Voting for: <strong>Tamil Nadu → Chennai</strong></span>
+      </div>
+      <p style="color:#6b7280; font-size:14px; margin-bottom:14px;">Solve this math question to confirm you're human.</p>
+      <div class="captcha-question" id="captchaQuestion">Loading...</div>
+      <div class="input-group" style="margin-top:14px;">
+        <label>Your Answer</label>
+        <input type="text" id="captchaAnswer" placeholder="Type your answer">
+      </div>
+      <button class="btn btn-primary" onclick="verifyCaptcha()">Proceed to Vote →</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = 'block';
+}
+function hideErr(id) { document.getElementById(id).style.display = 'none'; }
+
+function setStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+  for (let i = 1; i <= 3; i++)
+    document.getElementById('dot' + i).classList.toggle('done', i <= n);
+}
+
+function showOtpModal(otp, name) {
+  document.getElementById('otpDisplay').textContent = otp;
+  document.getElementById('voterNameDisplay').textContent = name;
+  document.getElementById('otpModal').classList.add('show');
+}
+function closeOtpModal() {
+  document.getElementById('otpModal').classList.remove('show');
+  document.getElementById('d1').focus();
+}
+
+async function sendOtp() {
+  hideErr('err1');
+  const voter_id = document.getElementById('voterId').value.trim().toUpperCase();
+  const mobile   = document.getElementById('mobile').value.trim();
+  if (!voter_id || !mobile) { showErr('err1', 'Please fill in both fields.'); return; }
+  const fd = new FormData();
+  fd.append('voter_id', voter_id); fd.append('mobile', mobile);
+  const res  = await fetch('/send-otp', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (!data.success) { showErr('err1', data.message); return; }
+  showOtpModal(data.otp, data.name);
+  document.getElementById('info2').style.display = 'block';
+  setStep(2);
+}
+
+function otpNext(el, nextId) {
+  el.value = el.value.replace(/\D/g, '');
+  if (el.value && nextId) document.getElementById(nextId).focus();
+}
+
+async function verifyOtp() {
+  hideErr('err2');
+  const otp = ['d1','d2','d3','d4','d5','d6'].map(id => document.getElementById(id).value).join('');
+  if (otp.length < 6) { showErr('err2', 'Please enter all 6 digits.'); return; }
+  const fd = new FormData(); fd.append('otp', otp);
+  const res  = await fetch('/verify-otp', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (!data.success) { showErr('err2', data.message); return; }
+  document.getElementById('captchaQuestion').textContent = data.captcha_question;
+  setStep(3);
+}
+
+async function verifyCaptcha() {
+  hideErr('err3');
+  const answer = document.getElementById('captchaAnswer').value.trim();
+  if (!answer) { showErr('err3', 'Please enter your answer.'); return; }
+  const fd = new FormData(); fd.append('captcha', answer);
+  const res  = await fetch('/verify-captcha', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (!data.success) {
+    showErr('err3', data.message);
+    if (data.new_question) document.getElementById('captchaQuestion').textContent = data.new_question;
+    document.getElementById('captchaAnswer').value = '';
+    return;
+  }
+  window.location.href = '/vote';
+}
+</script>
+</body>
+</html>

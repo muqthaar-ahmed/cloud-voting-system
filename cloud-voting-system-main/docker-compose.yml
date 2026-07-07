@@ -1,0 +1,95 @@
+version: "3.9"
+
+networks:
+  votenet:                    # Same concept as labnet 
+    driver: bridge
+
+services:
+
+  frontend:
+    build: ./frontend
+    image: ${DOCKERHUB_USER}/cloudvote-frontend:1
+    ports:
+      - "5000:5000"           # Host port 5000 → Container port 5000 
+    networks:
+      - votenet
+    environment:
+      - VOTE_API_URL=http://vote-api:5001
+    depends_on:
+      - vote-api
+    restart: unless-stopped    # Resiliency 
+
+  vote-api:
+    build: ./vote-api
+    image: ${DOCKERHUB_USER}/cloudvote-api:1
+    ports:
+      - "5001:5001"
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - DB_URL=http://db-service:6000
+    networks:
+      - votenet
+    depends_on:
+      - rabbitmq
+      - db-service
+    restart: unless-stopped
+
+  vote-worker:               
+    build: ./vote-worker
+    image: ${DOCKERHUB_USER}/cloudvote-worker:1
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - DB_URL=http://db-service:6000
+      - SERVICE_NAME=vote-worker
+      - QUEUE_NAME=votes
+      - BINDING_KEYS=vote.cast
+    networks:
+      - votenet
+    depends_on:
+      - rabbitmq
+      - db-service
+    restart: unless-stopped
+
+  db-service:
+    build: ./db-service
+    image: ${DOCKERHUB_USER}/cloudvote-db:1
+    ports:
+      - "7000:6000"
+    networks:
+      - votenet
+    restart: unless-stopped
+
+  result-service:
+    build: ./result-service
+    image: ${DOCKERHUB_USER}/cloudvote-result:1
+    ports:
+      - "5002:5002"
+    environment:
+      - DB_URL=http://db-service:6000
+    networks:
+      - votenet
+    depends_on:
+      - db-service
+    restart: unless-stopped
+
+  admin:
+    build: ./admin
+    image: ${DOCKERHUB_USER}/cloudvote-admin:1
+    ports:
+      - "5003:5003"
+    environment:
+      - DB_URL=http://db-service:6000
+    networks:
+      - votenet
+    depends_on:
+      - db-service
+    restart: unless-stopped
+
+  rabbitmq:                   
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"         # RabbitMQ management web UI
+    networks:
+      - votenet
+    restart: unless-stopped

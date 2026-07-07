@@ -1,0 +1,17 @@
+<!DOCTYPE html><html><head><title>Admin Dashboard</title>
+<meta http-equiv='refresh' content='10'>
+<style>body{font-family:Arial;background:#f1f5f9;padding:24px;}
+h1{color:#4f46e5;} table{width:100%;border-collapse:collapse;background:white;
+border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+th{background:#4f46e5;color:white;padding:12px;text-align:left;}
+td{padding:12px;border-bottom:1px solid #e2e8f0;}
+.voted{color:#16a34a;font-weight:bold;} .notvoted{color:#94a3b8;}</style></head>
+<body><h1>🛡️ Admin Dashboard</h1>
+<p>Total Votes: <strong>{{ results.total_votes }}</strong></p>
+<table><tr><th>Voter ID</th><th>Name</th><th>Constituency</th><th>Status</th></tr>
+{% for v in voters %}
+<tr><td>{{ v.voter_id }}</td><td>{{ v.name }}</td><td>{{ v.constituency }}</td>
+<td class='{% if v.has_voted %}voted{% else %}notvoted{% endif %}'>
+{% if v.has_voted %}✅ Voted{% else %}⏳ Not yet voted{% endif %}</td></tr>
+{% endfor %}
+</table></body></html>
